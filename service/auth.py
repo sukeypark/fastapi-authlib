@@ -1,9 +1,37 @@
+from datetime import datetime
 import time
 from jose import jwt
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 from starlette import status
 
 from core.security import oauth
+
+
+async def refresh_token(request):
+    if (
+        "info" not in request.session
+        or "token_info" not in request.session["info"]
+        or "refresh_token" not in request.session["info"]["token_info"]
+    ):
+        raise HTTPException("No session", status_code=status.HTTP_401_UNAUTHORIZED)
+    refresh_token = request.session["info"]["token_info"]["refresh_token"]
+    return await oauth.dhub.fetch_access_token(
+        refresh_token=refresh_token, grant_type="refresh_token"
+    )
+
+
+async def get_session_info(request: Request):
+    session = request.session
+    info = session.get("info")
+    if not info:
+        raise HTTPException(status_code=401)
+    token_info = info.get("token_info")
+    if not token_info:
+        raise HTTPException(status_code=401)
+    if datetime.now().timestamp() > token_info.get("expires_in"):
+        token_info = await refresh_token(request)
+        session["info"]["token_info"].update(token_info)
+    return session["info"]
 
 
 async def get_publickey(client, token):
