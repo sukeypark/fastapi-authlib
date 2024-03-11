@@ -15,6 +15,9 @@ async def refresh_token(request):
     ):
         raise HTTPException("No session", status_code=status.HTTP_401_UNAUTHORIZED)
     refresh_token = request.session["info"]["token_info"]["refresh_token"]
+    # authlib oauth client(이 코드에서는 "oauth.dhub" <- httpx client임)를 이용하여
+    # api요청을 하면(예시: await oaht.dhub.get) 자동으로 refresh하는 로직이 되어 있음
+    # 그러므로 dhub api를 이용하는 부분은 매번 수동으로 refresh를 하지 않아도 됨.
     return await oauth.dhub.fetch_access_token(
         refresh_token=refresh_token, grant_type="refresh_token"
     )
