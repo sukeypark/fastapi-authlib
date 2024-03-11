@@ -44,15 +44,35 @@ async def get_publickey(client, token):
     return resp.json()["publickey"]
 
 
-def parse_token(token, publickey):
+def decode_token(token, publickey):
     algorithm = jwt.get_unverified_header(token).get("alg")
     audience = jwt.get_unverified_claims(token).get("aud")
     return jwt.decode(token, publickey, audience=audience, algorithms=[algorithm])
 
 
-async def get_user_info(client, token):
+def get_sessioned_user_info(request: Request):
+    session = request.session
+    try:
+        return session["info"]["user_info"]
+    except KeyError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="No session"
+        )
+
+
+def get_sessioned_token_info(request: Request):
+    session = request.session
+    try:
+        return session["info"]["token_info"]
+    except KeyError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="No session"
+        )
+
+
+async def parse_token(client, token):
     publickey = await get_publickey(client, token=token)
-    token_info = parse_token(token["access_token"], publickey)
+    token_info = decode_token(token["access_token"], publickey)
     # user_info from oauth server <- 만일 더 정보가 필요하면 api로 요청
     return {
         "user_id": token_info["userId"],

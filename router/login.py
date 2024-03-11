@@ -4,7 +4,13 @@ from fastapi.responses import RedirectResponse
 
 from core.security import oauth
 from core.config import settings
-from service.auth import get_session_info, get_user_info, set_user_session
+from service.auth import (
+    get_session_info,
+    get_sessioned_token_info,
+    get_sessioned_user_info,
+    parse_token,
+    set_user_session,
+)
 
 
 router = APIRouter()
@@ -50,8 +56,7 @@ async def authorize(request: Request):
         return RedirectResponse(request.url_for("redirect_to_oauth2"))
     #     return RedirectResponse(settings.LOGIN_FAILURE_URL)
     token_info = await oauth.dhub.authorize_access_token(request)
-    access_token = token_info["access_token"]
-    user_info = await get_user_info(oauth.dhub, token=token_info)
+    user_info = await parse_token(oauth.dhub, token_info)
 
     set_user_session(request.session, token_info=token_info, user_info=user_info)
     return RedirectResponse(settings.LOGIN_SUCCESS_URL)
@@ -62,31 +67,11 @@ async def session_info(request: Request):
     return await get_session_info(request)
 
 
-def get_user_info(request: Request):
-    session = request.session
-    try:
-        return session["info"]["user_info"]
-    except KeyError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="No session"
-        )
-
-
-def get_token_info(request: Request):
-    session = request.session
-    try:
-        return session["info"]["token_info"]
-    except KeyError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="No session"
-        )
-
-
 @router.get("/logout")
 async def logout(
     request: Request,
-    user_info=Depends(get_user_info),
-    token=Depends(get_token_info),
+    user_info=Depends(get_sessioned_user_info),
+    token=Depends(get_sessioned_token_info),
 ):
     resp = await oauth.dhub.post(
         f"{settings.OAUTH2_AUTH_HOST}/security/logout",
