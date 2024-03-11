@@ -4,7 +4,6 @@ from fastapi import HTTPException
 from starlette import status
 
 from core.security import oauth
-from schema.user import UserInfo
 
 
 async def get_publickey(client, token):
