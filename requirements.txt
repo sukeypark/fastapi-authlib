@@ -1,0 +1,8 @@
+pydantic
+pydantic-settings
+uvicorn
+httpx
+authlib
+python-jose
+fastapi
+itsdangerous
