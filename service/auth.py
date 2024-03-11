@@ -7,7 +7,7 @@ from starlette import status
 from core.security import oauth
 
 
-async def refresh_token(request):
+async def refresh_access_token(request):
     if (
         "info" not in request.session
         or "token_info" not in request.session["info"]
@@ -17,7 +17,7 @@ async def refresh_token(request):
     refresh_token = request.session["info"]["token_info"]["refresh_token"]
     # authlib oauth client(이 코드에서는 "oauth.dhub" <- httpx client임)를 이용하여
     # api요청을 하면(예시: await oaht.dhub.get) 자동으로 refresh하는 로직이 되어 있음
-    # 그러므로 dhub api를 이용하는 부분은 매번 수동으로 refresh를 하지 않아도 됨.
+    # 그러므로 dhub api를 이용하는 부분은 매번 토큰 만료 여부 체크하여 수동으로 refresh를 하지 않아도 됨.
     return await oauth.dhub.fetch_access_token(
         refresh_token=refresh_token, grant_type="refresh_token"
     )
@@ -32,7 +32,7 @@ async def get_session_info(request: Request):
     if not token_info:
         raise HTTPException(status_code=401)
     if datetime.now().timestamp() > token_info.get("expires_in"):
-        token_info = await refresh_token(request)
+        token_info = await refresh_access_token(request)
         session["info"]["token_info"].update(token_info)
     return session["info"]
 
