@@ -23,7 +23,7 @@ async def redirect_to_oauth2(request: Request):
 def set_test_session(request: Request):
     request.session["info"] = {
         "user_info": {
-            "userId": "user01",
+            "user_id": "user01",
             "nickname": "user",
             "name": "user",
             "email": "user@example.com",
@@ -32,7 +32,7 @@ def set_test_session(request: Request):
         },
         "token_info": {
             "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoidXNlclN5c3RlbSIsInVzZXJJZCI6InVzZXIwMSIsIm5pY2tuYW1lIjoidXNlciIsImVtYWlsIjoidXNlckBleGFtcGxlLmNvbSIsInJvbGUiOiJEaHViX1VzZXIiLCJpYXQiOjE3MTAxMjcxMTYsImV4cCI6MTcxMDEzMDcxNiwiYXVkIjoiM2VSb2Zocmw2d1BXYXVYMnUwR1QiLCJpc3MiOiJ1cm46ZGF0YWh1YjpjaXR5aHViOnNlY3VyaXR5In0.KcPPTREvxtbl0fIML3o6e--1YsPtbAl-eY30gUDd8-JqK6Gs5vBjnQDS5hT9gznqHGUGDDrc9AVFUpFLPhVSqZLyo6gAl-XqJwZNhcB73iGOu-I6WA3xcEi-ULWUTaNMqm074x0gqkQzIBICLTQ8w9z2zft5v2ibTm7ZtQ6y4Q80D1RGix-fTjUwBMrEvesscOj9KdKwVJzYQcSd2AmK9YGQo_kgsGKlLO3WINjl73DYXXqa7F-kllfnbiHTlM4ZIdXYzrcWGRNAdzjD09xCaa2Rp3iY-Ghb8YRCbrij6BgnqMZnpNt1wTbL0a3vHSo0P-3oA-Djf_OI8ACWeJoTiw",
-            "refresh_token": "jXNss7792CLlkLM46mgIiCbncoiLa5v6jDwh9oiw0wzA5FI39ed40lwF97xS1p1ww1sIxBbRzLNA91M609yO2ONketQKhs51naun40UgangHriFAXIuLqAHeh4jkQ2CW",
+            "refresh_token": "lZCoy8SGVUf5z2mWKk4LjNKX5hgXWmcL4ii5Zoyf74IkkyHSBCOrPMqCKKSzdV3yUkdaE85J2V0DDjUCdtR5944O0YVcqMWzBIcDvW0m1Xs0CwSN3v3fVcvid99FWjZO",
             "expires_in": 1710130716,
             "refresh_expires_in": 1711855116,
             "token_type": "Bearer",
@@ -60,3 +60,38 @@ async def authorize(request: Request):
 @router.get("/sessioninfo")
 async def session_info(request: Request):
     return await get_session_info(request)
+
+
+def get_user_info(request: Request):
+    session = request.session
+    try:
+        return session["info"]["user_info"]
+    except KeyError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="No session"
+        )
+
+
+def get_token_info(request: Request):
+    session = request.session
+    try:
+        return session["info"]["token_info"]
+    except KeyError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="No session"
+        )
+
+
+@router.get("/logout")
+async def logout(
+    request: Request,
+    user_info=Depends(get_user_info),
+    token=Depends(get_token_info),
+):
+    resp = await oauth.dhub.post(
+        f"{settings.OAUTH2_AUTH_HOST}/security/logout",
+        data={"userId": user_info["user_id"]},
+        token=token,
+    )
+    request.session.clear()
+    return resp.json()
