@@ -10,4 +10,5 @@ oauth.register(
     client_secret=settings.OAUTH2_CLIENT_SECRET,
     access_token_url=settings.OAUTH2_TOKEN_ENDPOINT,
     authorize_url=settings.OAUTH2_AUTHORIZE_ENDPOINT,
+    api_base_url=settings.OAUTH2_AUTH_HOST,
 )

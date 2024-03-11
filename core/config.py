@@ -1,5 +1,4 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import AnyHttpUrl
 
 
 class Settings(BaseSettings):
@@ -14,6 +13,8 @@ class Settings(BaseSettings):
     OAUTH2_AUTHORIZE_ENDPOINT: str
     OAUTH2_TOKEN_ENDPOINT: str
     OAUTH2_TOKEN_REVOKE_ENDPOINT: str
+    LOGIN_SUCCESS_URL: str
+    LOGIN_FAILURE_URL: str
 
 
 settings = Settings()
